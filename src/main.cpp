@@ -1,6 +1,10 @@
 #include <iostream>
+#include "kitchen.h"
 
 int main()
 {
-    std::cout<<"Hello world!"<<std::endl;
+    Kitchen kithen;
+
+    std::cout<<kithen.getNameFood(Kitchen::Food::pizza);
+   
 }
