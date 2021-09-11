@@ -10,7 +10,7 @@ Kitchen::~Kitchen()
     delete _order;
 }
 
-std::size_t Kitchen::setOrder(const Food food)
+std::size_t Kitchen::setOrder(const Food& food)
 {
     {
          std::unique_lock ul(m_oreder);
@@ -21,7 +21,7 @@ std::size_t Kitchen::setOrder(const Food food)
     return _order->size();
 }
 
-std::string Kitchen::getNameFood(const Food food)
+std::string Kitchen::getNameFood(const Food& food)
 {
     std::string name_food;
     switch (food)

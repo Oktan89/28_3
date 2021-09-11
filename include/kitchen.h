@@ -21,6 +21,6 @@ public:
     
     Kitchen();
     ~Kitchen();
-    std::string getNameFood(const Food food);
-    std::size_t setOrder(const Food food);
+    std::string getNameFood(const Food& food);
+    std::size_t setOrder(const Food& food);
 };
