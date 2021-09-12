@@ -5,7 +5,7 @@ int main()
 {
     Kitchen kithen;
 
-    std::cout<<kithen.getNameFood(Kitchen::Food::pizza);
-    std::cout<<kithen.setOrder(Kitchen::Food::pizza);
-   
+    kithen.setOrder(Kitchen::Food::salad);
+    kithen.setOrder(Kitchen::Food::soup);
+    std::this_thread::sleep_for(std::chrono::seconds(20));
 }
