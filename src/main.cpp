@@ -5,7 +5,12 @@ int main()
 {
     Kitchen kithen;
 
-    kithen.setOrder(Kitchen::Food::salad);
-    kithen.setOrder(Kitchen::Food::soup);
-    std::this_thread::sleep_for(std::chrono::seconds(20));
+    for(int i = 0; i < 2; ++i)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(std::rand()%10+5+1));
+        kithen.setOrder(static_cast<Kitchen::Food>(rand()%5+1));
+    }
+    
+        
+    std::cout<<"yes"<<std::endl;
 }

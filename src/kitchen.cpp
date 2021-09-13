@@ -14,29 +14,31 @@ Kitchen::Kitchen()
 }
 
 Kitchen::~Kitchen()
-{
-     delete _order;
+{   
+    delete _order;
+    std::shared_lock sl(s_order);
+    std::cout<<"Kitchen delete"<<std::endl;
 }
-bool Kitchen::_work{true};
+
+
 
 void Kitchen::kitchen_process(Kitchen& kitchen)
 {
-    std::unique_lock ul(kitchen.m_oreder);
-    kitchen.cv_kitchen.wait(ul, [](){return _work;});
-
+//??????????????????????????????????/
+    
 }
 
 void Kitchen::setOrder(const Food& food)
 {
     std::string text = "An order for a " + getNameFood(food) + " dish has been accepted\n";
-     std::unique_lock ul(m_oreder);
+     std::unique_lock sl(m_order);
     _order->push(food);
-    std::cout<<text;
+     std::cout<<text;
 }
 
 std::size_t Kitchen::getSizeOrder()
 {
-    std::unique_lock sl(m_oreder);
+    std::shared_lock sl(s_order);
     return _order->size();
 }
 
