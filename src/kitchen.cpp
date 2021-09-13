@@ -8,49 +8,22 @@ Kitchen::Kitchen()
 {
     std::srand(std::time(nullptr));
     _order = new std::queue<Food>;
-    _extradition = new std::queue<Food>;
-    _start = std::thread(kitchenStart, std::ref(*this));
-    _start.detach();
+    //_extradition = new std::queue<Food>;
+    _kitchen_process = std::thread(kitchen_process, std::ref(*this));
+    _kitchen_process.detach();
 }
 
 Kitchen::~Kitchen()
 {
-    _work = false; 
      delete _order;
 }
+bool Kitchen::_work{true};
 
-void Kitchen::kitchenStart(Kitchen& kitchen)
+void Kitchen::kitchen_process(Kitchen& kitchen)
 {
-    std::shared_lock sl(kitchen.m_oreder);
-    bool work = kitchen._work;
-    sl.unlock();
-    while(work)
-    {
-        sl.lock();
-        bool emptyOrder = kitchen._order->empty();
-        sl.unlock();
-        if(emptyOrder)
-        {
-            //Снимаем нагрузку на поцессор
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        }
-        else
-        {
-            Food order;
-            std::string text;
-            std::unique_lock ul(kitchen.m_oreder);
-            order = kitchen._order->front();
-            text  = "The " + kitchen.getNameFood(order) +" order arrived in the kitchen\n";
-            kitchen._order->pop();
-            std::cout<<text;
-            ul.unlock();
-            std::this_thread::sleep_for(std::chrono::seconds(rand()%15+5));
-            text = "The " + kitchen.getNameFood(order) + " order is ready\n";
-            std::unique_lock eul(kitchen.m_extradition);
-            kitchen._extradition->push(order);
-            std::cout<<text;
-        }
-    }
+    std::unique_lock ul(kitchen.m_oreder);
+    kitchen.cv_kitchen.wait(ul, [](){return _work;});
+
 }
 
 void Kitchen::setOrder(const Food& food)
@@ -63,7 +36,7 @@ void Kitchen::setOrder(const Food& food)
 
 std::size_t Kitchen::getSizeOrder()
 {
-    std::shared_lock sl(m_oreder);
+    std::unique_lock sl(m_oreder);
     return _order->size();
 }
 

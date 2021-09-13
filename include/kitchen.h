@@ -2,6 +2,7 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <condition_variable>
 #include <shared_mutex>
 
 
@@ -14,12 +15,14 @@ public:
     };
 private:
     std::queue<Food>* _order;
-    std::shared_mutex m_oreder;
-    std::thread _start;
-    bool _work{true};
-    std::queue<Food>* _extradition;
-    std::mutex m_extradition;
-    static void kitchenStart(Kitchen& kitchen);
+    std::mutex m_oreder;
+    
+   // std::queue<Food>* _extradition;
+   // std::mutex m_extradition;
+    static bool _work;
+    std::condition_variable cv_kitchen;
+    std::thread _kitchen_process;
+    static void kitchen_process(Kitchen& kitchen);
 public:
     
     Kitchen();
