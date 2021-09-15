@@ -18,7 +18,8 @@ private:
     std::mutex m_order;
     std::shared_mutex s_order;
     std::condition_variable cv;
-    bool end_order{false};
+    bool end_order{false};    //завершение работы потока order
+    bool status_order{false}; //есть ли заказ для кухни
    // std::queue<Food>* _extradition;
    // std::mutex m_extradition;
     std::thread _kitchen_process;

@@ -24,8 +24,24 @@ Kitchen::~Kitchen()
 
 void Kitchen::kitchen_process(Kitchen& kitchen)
 {
-//??????????????????????????????????
-    
+    std::unique_lock<std::mutex> ul(kitchen.m_order);
+    std::cout<<"Kitchen start...\n";
+
+    while(true)
+    {
+        if(kitchen.end_order) //Проверка на выход из потока
+            break;
+        kitchen.cv.wait(ul, [&](){return kitchen.status_order || kitchen.end_order;});
+        for(int i = 0; i < kitchen._order->size(); ++i)
+        {
+            std::cout<<"kuc "<<kitchen.getNameFood(kitchen._order->front())<<"\n";
+            ul.unlock();
+            std::this_thread::sleep_for(std::chrono::seconds(std::rand()%15+5+1));
+            ul.lock();
+        }
+    }
+    std::cout<<"Kitchen close.\n"; // не закрылась!!!
+
 }
 
 //Создаем поток онлайн-заказ 
@@ -41,6 +57,7 @@ void Kitchen::order_process(Kitchen& kitchen)
 {
     std::srand(std::time(nullptr)); //Новое зерно для RAND, в потоках нужно вызывать заново
     std::unique_lock<std::mutex> sh(kitchen.m_order); //Блокировка для проверки выхода из потока
+    std::cout<<"Thread order start...\n";
     while(true)
     {
         
@@ -54,7 +71,7 @@ void Kitchen::order_process(Kitchen& kitchen)
     }
     //Выход из потока с увидомлением родительского потока
     std::notify_all_at_thread_exit(kitchen.cv, std::move(sh)); 
-    std::cout<<"Thread order close\n";
+    std::cout<<"Thread order close.\n";
 }
 
 void Kitchen::endThread()
@@ -69,7 +86,9 @@ void Kitchen::setOrder(const Food& food)
     std::string text = "An order for a " + getNameFood(food) + " dish has been accepted\n";
      std::unique_lock sl(m_order);
     _order->push(food);
+    status_order = true;
      std::cout<<text;
+     cv.notify_all();
 }
 
 std::size_t Kitchen::getSizeOrder()
