@@ -34,13 +34,22 @@ void Kitchen::kitchen_process(Kitchen& kitchen)
         kitchen.cv.wait(ul, [&](){return kitchen.status_order || kitchen.end_order;});
         for(int i = 0; i < kitchen._order->size(); ++i)
         {
-            std::cout<<"kuc "<<kitchen.getNameFood(kitchen._order->front())<<"\n";
+            std::cout<<"Cook "<<kitchen.getNameFood(kitchen._order->front())<<" ...\n";
+            kitchen._order->pop();
+            kitchen.status_order = false;
+            if(kitchen.end_order) //Проверка на выход из потока
+                break;
             ul.unlock();
             std::this_thread::sleep_for(std::chrono::seconds(std::rand()%15+5+1));
             ul.lock();
+            std::cout<<"End cook "<<kitchen.getNameFood(kitchen._order->front())<<".\n";
         }
     }
-    std::cout<<"Kitchen close.\n"; // не закрылась!!!
+    //Выход из потока с увидомлением родительского потока
+    std::cout<<"Thread kitchen close.\n"; 
+    kitchen.end_cook = true;
+    std::notify_all_at_thread_exit(kitchen.cv, std::move(ul)); 
+    
 
 }
 
@@ -70,15 +79,17 @@ void Kitchen::order_process(Kitchen& kitchen)
         sh.lock();  
     }
     //Выход из потока с увидомлением родительского потока
-    std::notify_all_at_thread_exit(kitchen.cv, std::move(sh)); 
     std::cout<<"Thread order close.\n";
+    kitchen.end_ord = true;
+    std::notify_all_at_thread_exit(kitchen.cv, std::move(sh)); 
+    
 }
 
 void Kitchen::endThread()
 {
     std::unique_lock<std::mutex> ul(m_order);
     end_order = true; //Запускаем выход из дочерних потоков
-    cv.wait(ul); //Ждем завершения
+    cv.wait(ul, [=](){return end_cook && end_ord;}); //Ждем завершения всех потоков
 }
 
 void Kitchen::setOrder(const Food& food)

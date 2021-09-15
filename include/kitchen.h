@@ -20,6 +20,8 @@ private:
     std::condition_variable cv;
     bool end_order{false};    //завершение работы потока order
     bool status_order{false}; //есть ли заказ для кухни
+    bool end_cook{false};       
+    bool end_ord{false};
    // std::queue<Food>* _extradition;
    // std::mutex m_extradition;
     std::thread _kitchen_process;
