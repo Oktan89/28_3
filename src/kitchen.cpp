@@ -8,7 +8,7 @@ Kitchen::Kitchen()
 {
     std::srand(std::time(nullptr));
     _order = new std::queue<Food>;
-    //_extradition = new std::queue<Food>;
+    _extradition = new std::queue<Food>;
     _kitchen_process = std::thread(kitchen_process, std::ref(*this));
     _kitchen_process.detach();
 }
@@ -20,37 +20,40 @@ Kitchen::~Kitchen()
     std::cout<<"Kitchen close"<<std::endl;
 }
 
-
-
-void Kitchen::kitchen_process(Kitchen& kitchen)
+void Kitchen::kitchen_process(Kitchen &kitchen)
 {
+    std::srand(std::time(nullptr)); //Новое зерно для RAND, в потоках нужно вызывать заново
     std::unique_lock<std::mutex> ul(kitchen.m_order);
-    std::cout<<"Kitchen start...\n";
+    std::cout << "Kitchen start...\n";
 
-    while(true)
+    while (true)
     {
-        if(kitchen.end_order) //Проверка на выход из потока
+        if (kitchen.end_order) //Проверка на выход из потока
             break;
-        kitchen.cv.wait(ul, [&](){return kitchen.status_order || kitchen.end_order;});
-        for(int i = 0; i < kitchen._order->size(); ++i)
+        //Ожадние события первого заказа или завершения заказов
+        kitchen.cv.wait(ul, [&]() { return kitchen.status_order || kitchen.end_order; });
+        while (kitchen._order->size() > 0)
         {
-            std::cout<<"Cook "<<kitchen.getNameFood(kitchen._order->front())<<" ...\n";
+            if (kitchen.end_order) //Проверка на выход из потока
+                break;
+            Food cook_food = kitchen._order->front();
+            std::cout << "Cook " << kitchen.getNameFood(cook_food) << " ...\n";
             kitchen._order->pop();
             kitchen.status_order = false;
-            if(kitchen.end_order) //Проверка на выход из потока
-                break;
             ul.unlock();
-            std::this_thread::sleep_for(std::chrono::seconds(std::rand()%15+5+1));
+            //Эмуляция приготовления блюда
+            std::this_thread::sleep_for(std::chrono::seconds(std::rand() % 15 + 5 + 1));
+            kitchen.m_extradition.lock();
+            kitchen._extradition->push(cook_food);
+            kitchen.m_extradition.unlock();
             ul.lock();
-            std::cout<<"End cook "<<kitchen.getNameFood(kitchen._order->front())<<".\n";
+            std::cout << "End cook " << kitchen.getNameFood(cook_food) << ".\n";
         }
     }
     //Выход из потока с увидомлением родительского потока
-    std::cout<<"Thread kitchen close.\n"; 
+    std::cout << "Thread kitchen close.\n";
     kitchen.end_cook = true;
-    std::notify_all_at_thread_exit(kitchen.cv, std::move(ul)); 
-    
-
+    std::notify_all_at_thread_exit(kitchen.cv, std::move(ul));
 }
 
 //Создаем поток онлайн-заказ 
@@ -92,14 +95,39 @@ void Kitchen::endThread()
     cv.wait(ul, [=](){return end_cook && end_ord;}); //Ждем завершения всех потоков
 }
 
-void Kitchen::setOrder(const Food& food)
+void Kitchen::setOrder(const Food &food)
 {
-    std::string text = "An order for a " + getNameFood(food) + " dish has been accepted\n";
-     std::unique_lock sl(m_order);
+    std::string text = "An order for a " + getNameFood(food) + " dish has been accepted.\n";
+    std::unique_lock sl(m_order);
+    if (end_order) //Проверка на выход из потока
+        return;
     _order->push(food);
     status_order = true;
-     std::cout<<text;
-     cv.notify_all();
+    std::cout << text;
+    cv.notify_all();
+}
+
+bool Kitchen::getCookOrder()
+{
+    std::unique_lock<std::mutex> ul(m_extradition);
+    if(_extradition->size()==0)
+    {
+        ul.unlock();
+        m_order.lock();
+        std::cout<<"[The order is not ready for delivery.]\n";
+        m_order.unlock();
+        return false;
+    }
+    else
+    {
+        Food food = _extradition->front();
+        _extradition->pop();
+        ul.unlock();
+        m_order.lock();
+        std::cout<<"|----->> The order "<<getNameFood(food)<<" is being delivered.\n";
+        m_order.unlock();
+        return true;
+    }
 }
 
 std::size_t Kitchen::getSizeOrder()
@@ -108,7 +136,7 @@ std::size_t Kitchen::getSizeOrder()
     return _order->size();
 }
 
-std::string Kitchen::getNameFood(const Food& food)
+std::string Kitchen::getNameFood(const Food &food)
 {
     std::string name_food;
     switch (food)
@@ -128,7 +156,7 @@ std::string Kitchen::getNameFood(const Food& food)
     case Food::sushi:
         name_food = "sushi";
         break;
-    
+
     default:
         name_food = "no order";
         break;

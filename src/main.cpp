@@ -6,8 +6,15 @@ int main()
     Kitchen kithen;
 
    kithen.orderStart();
-  std::this_thread::sleep_for(std::chrono::seconds(10));
+   int delivery = 0;
+   while(delivery < 10)
+   {
+       std::this_thread::sleep_for(std::chrono::seconds(30));
+       if(kithen.getCookOrder())
+            ++delivery;
+   }
+
    kithen.endThread();
-   // std::this_thread::sleep_for(std::chrono::seconds(15));
-      
+   std::cout<<"["<<delivery<< "] order delivered."<<std::endl; 
+         
 }
