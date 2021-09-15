@@ -3,7 +3,7 @@
 
 int main()
 {
-    Kitchen kithen;
+   Kitchen kithen;
 
    kithen.orderStart();
    int delivery = 0;
